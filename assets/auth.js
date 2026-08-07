@@ -24,6 +24,14 @@ async function signIn(e) {
   location.replace('index.html');
 }
 
+async function signInWithPasskey() {
+  if(!sb.auth.signInWithPasskey) return setMsg('Passkey-login kræver en nyere Supabase-klient.','bad');
+  setMsg('Åbner passkey…');
+  const {error}=await sb.auth.signInWithPasskey();
+  if(error) return setMsg(error.code==='passkey_disabled'?'Passkeys er endnu ikke aktiveret for PengePilot.':error.message,'bad');
+  location.replace('index.html');
+}
+
 async function signUp(e) {
   e.preventDefault(); setMsg('Opretter bruger…');
   const fullName=qs('#fullName').value.trim(), email=qs('#email').value.trim(), password=qs('#password').value;
@@ -86,6 +94,7 @@ async function redirectIfSignedIn() {
 
 window.addEventListener('DOMContentLoaded',async()=>{
   qs('#loginForm')?.addEventListener('submit',signIn);
+  qs('#passkeyLogin')?.addEventListener('click',signInWithPasskey);
   qs('#signupForm')?.addEventListener('submit',signUp);
   qs('#forgotForm')?.addEventListener('submit',sendReset);
   qs('#resetForm')?.addEventListener('submit',updatePassword);
