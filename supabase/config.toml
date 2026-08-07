@@ -1,0 +1,4 @@
+project_id = "ydtovbdyqxnqyitebcsg"
+
+[functions.pengepilot-ai]
+verify_jwt = true
