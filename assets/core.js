@@ -8,5 +8,5 @@ const css=`
 `;
 const money=(title,value,note,cls='')=>`<div class="card"><h3>${title}</h3><div class="sub">${note}</div><div class="kpi ${cls}">${value}</div></div>`;
 const nav=page=>`<aside class="side"><div class="brand"><div class="logo">P</div><div><b>PengePilot</b><small>Din personlige AI-økonomi</small></div><button class="btn mobile" onclick="document.querySelector('.side').classList.toggle('open')">Menu</button></div><nav class="menu">${links.map(([id,label,url])=>`<a class="${id===page?'on':''}" href="${url}">${label}</a>`).join('')}</nav><div class="sidebox"><b>Demo-prototype</b><br>Alle beløb og transaktioner er placeholder-data. Ingen bankdata sendes til en server.</div></aside>`;
-const top=page=>`<header class="top"><div><h1>${PAGES[page][0]}</h1><p>${PAGES[page][1]}</p></div><span class="badge">● PLACEHOLDER DATA</span></header>`;
+const pageHeader=page=>`<header class="top"><div><h1>${PAGES[page][0]}</h1><p>${PAGES[page][1]}</p></div><span class="badge">● PLACEHOLDER DATA</span></header>`;
 const rows=arr=>arr.map(([a,b,c=''])=>`<div class="row"><div><b>${a}</b><small>${b}</small></div><div>${c}</div></div>`).join('');
