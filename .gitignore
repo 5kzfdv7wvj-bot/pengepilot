@@ -1,0 +1,5 @@
+supabase/.env
+supabase/functions/.env
+.env
+.env.*
+!.env.example
