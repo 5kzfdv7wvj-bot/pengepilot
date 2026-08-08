@@ -4,6 +4,7 @@
   "private": true,
   "description": "Native iOS and Android shell for PengePilot",
   "scripts": {
+    "web:audit": "node scripts/audit-web.mjs",
     "mobile:prepare": "node scripts/prepare-mobile.mjs",
     "mobile:configure": "node scripts/configure-native.mjs",
     "mobile:assets": "npx capacitor-assets generate --assetPath resources --iconBackgroundColor '#0D1428' --iconBackgroundColorDark '#0D1428' --splashBackgroundColor '#0D1428' --splashBackgroundColorDark '#0D1428'",
