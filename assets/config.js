@@ -9,14 +9,15 @@ window.PENGEPILOT_CONFIG = {
   if (window.__PENGEPILOT_POLISH_LOADER__) return;
   window.__PENGEPILOT_POLISH_LOADER__ = true;
   const files = [
-    'assets/native-runtime-v11.js?v=11',
+    'assets/native-runtime-v12.js?v=12',
     'assets/polish-core-v7.js?v=7',
     'assets/polish-finance-v7.js?v=7',
     'assets/polish-overview-v7.js?v=7',
     'assets/polish-local-v7.js?v=7',
     'assets/ai-runtime-v8.js?v=10',
     'assets/import-ai-v8.js?v=8',
-    'assets/simplify-v10.js?v=10'
+    'assets/simplify-v10.js?v=10',
+    'assets/store-runtime-v12.js?v=12'
   ];
   const start = () => {
     let i = 0;
