@@ -33,7 +33,7 @@
   `;
   document.head.appendChild(style);
 
-  const App = cap?.Plugins?.App;
+  const App = cap?.registerPlugin?.('App') || cap?.Plugins?.App;
   if (!App) return;
 
   const routes = {
