@@ -9,10 +9,12 @@ window.PENGEPILOT_CONFIG = {
   if (window.__PENGEPILOT_STABLE_LOADER__) return;
   window.__PENGEPILOT_STABLE_LOADER__ = true;
 
-  const mobileCss = document.createElement('link');
-  mobileCss.rel = 'stylesheet';
-  mobileCss.href = 'assets/mobile-v14.css?v=14';
-  document.head.appendChild(mobileCss);
+  for (const href of ['assets/mobile-v14.css?v=14','assets/ai-action-center-v15.css?v=15']) {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = href;
+    document.head.appendChild(css);
+  }
 
   const files = [
     'assets/native-runtime-v12.js?v=12',
@@ -28,7 +30,9 @@ window.PENGEPILOT_CONFIG = {
     'assets/web-settings-v13.js?v=13',
     'assets/web-economy-v14.js?v=14',
     'assets/web-dashboard-v14.js?v=14',
-    'assets/web-boot-v14.js?v=14'
+    'assets/debts-v15.js?v=15',
+    'assets/web-boot-v15.js?v=15',
+    'assets/ai-action-center-v15.js?v=15'
   ];
 
   const start = () => {

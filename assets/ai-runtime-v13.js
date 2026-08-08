@@ -1,5 +1,5 @@
 // PengePilot AI runtime v13: secure Edge Function client only.
-// UI ownership lives in the deterministic web v13 modules to avoid asynchronous renderer overrides/races.
+// UI ownership lives in the deterministic web modules to avoid asynchronous renderer overrides/races.
 (() => {
   if (window.__PENGEPILOT_AI_V13__) return;
   window.__PENGEPILOT_AI_V13__ = true;
@@ -27,14 +27,14 @@
   }
 
   async function status(force = false) {
-    if (cfg.aiEnabled === false) return { deployed:true, configured:false, model:null, reason:'disabled' };
+    if (cfg.aiEnabled === false) return { deployed:true, configured:false, agent:false, model:null, reason:'disabled' };
     if (!force && state.status && Date.now() - state.checkedAt < 60000) return state.status;
     try {
       const data = await invoke('status');
-      state.status = { deployed:true, configured:Boolean(data.configured), model:data.model || null };
+      state.status = { deployed:true, configured:Boolean(data.configured), agent:Boolean(data.agent), model:data.model || null };
     } catch (error) {
       const message = String(error?.message || error || '');
-      state.status = { deployed:!/404|not found|function/i.test(message), configured:false, model:null, reason:message || 'unavailable' };
+      state.status = { deployed:!/404|not found|function/i.test(message), configured:false, agent:false, model:null, reason:message || 'unavailable' };
     }
     state.checkedAt = Date.now();
     return state.status;
