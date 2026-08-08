@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 
 const root = process.cwd();
@@ -58,7 +59,7 @@ if (fs.existsSync(boot15)) {
 const agentPath = path.join(root, 'assets/ai-action-center-v15.js');
 if (fs.existsSync(agentPath)) {
   const content = fs.readFileSync(agentPath, 'utf8');
-  for (const required of ['agent_plan','agent_execute','Udfør','Ret','Annuller']) if (!content.includes(required)) fail.push(`AI-handlingscenter mangler ${required}`);
+  for (const required of ['agent_plan','agent_execute','confirmed: true','Udfør','Ret','Annuller']) if (!content.includes(required)) fail.push(`AI-handlingscenter mangler ${required}`);
 }
 
 const edgePath = path.join(root, 'supabase/functions/pengepilot-ai/index.ts');
@@ -66,6 +67,11 @@ if (fs.existsSync(edgePath)) {
   const content = fs.readFileSync(edgePath, 'utf8');
   for (const required of ['agent_plan','agent_execute','create_debt','set_budget','set_balance_anchor']) if (!content.includes(required)) fail.push(`Edge Function mangler ${required}`);
   if (/service[_-]?role/i.test(content)) fail.push('AI Edge Function må ikke bruge service-role-nøgle.');
+  const temp = path.join(os.tmpdir(), `pengepilot-edge-${process.pid}.mjs`);
+  fs.writeFileSync(temp, content);
+  const result = spawnSync(process.execPath, ['--check', temp], { encoding:'utf8' });
+  fs.rmSync(temp, { force:true });
+  if (result.status !== 0) fail.push(`Syntaxfejl i AI Edge Function: ${(result.stderr || result.stdout).trim()}`);
 }
 
 const migrationPath = path.join(root, 'supabase/migrations/20260808204500_ai_action_center.sql');
@@ -79,4 +85,4 @@ if (fail.length) {
   for (const item of fail) console.error(`- ${item}`);
   process.exit(1);
 }
-console.log(`Web audit OK: ${htmlFiles.length} HTML-sider, ${syntaxFiles.length} JS/MJS-filer, mobile v15 AI/debt runtime og lokale referencer valideret.`);
+console.log(`Web audit OK: ${htmlFiles.length} HTML-sider, ${syntaxFiles.length} JS/MJS-filer, AI Edge Function, mobile v15 AI/debt runtime og lokale referencer valideret.`);
