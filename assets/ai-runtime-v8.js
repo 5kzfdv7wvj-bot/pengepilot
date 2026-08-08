@@ -63,12 +63,12 @@
 
   async function loadAiClientIfReady() {
     const pageId = document.body?.dataset?.page || '';
-    if (!cfg.aiEnabled || !['transactions', 'chat', 'savings'].includes(pageId)) return;
+    if (!cfg.aiEnabled || !['transactions', 'chat', 'savings', 'reports'].includes(pageId)) return;
     const current = await status();
     if (!current.configured || state.loadingClient || window.pp6Invoke) return;
     state.loadingClient = true;
     const script = document.createElement('script');
-    script.src = 'assets/ai-v6.js?v=8';
+    script.src = 'assets/ai-v6.js?v=10';
     script.async = false;
     script.onload = () => {
       state.loadingClient = false;
