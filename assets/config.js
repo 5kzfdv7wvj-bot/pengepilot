@@ -11,6 +11,7 @@ window.PENGEPILOT_CONFIG = {
   const files = [
     'assets/polish-core-v7.js?v=7',
     'assets/polish-finance-v7.js?v=7',
+    'assets/polish-overview-v7.js?v=7',
     'assets/polish-local-v7.js?v=7'
   ];
   const start = () => {
