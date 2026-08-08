@@ -10,3 +10,9 @@ android/
 ios/
 build/
 *.log
+*.p12
+*.p8
+*.mobileprovision
+*.jks
+*.keystore
+*service-account*.json
