@@ -257,7 +257,7 @@ async function executeAction(sb,userId,a){
   }
   if(a.type==='set_budget'){
     const category=a.category?await resolveCategory(sb,a.category,'expense'):null,amount=Number(a.amount);if(!Number.isFinite(amount)||amount<0)throw new Error('Budgetbeløb skal være 0 eller mere.');
-    const date=validDate(a.date||`${today().slice(0,7)}-01`),`${today().slice(0,7)}-01`),period=`${date.slice(0,7)}-01`;
+    const fallback=`${today().slice(0,7)}-01`,date=validDate(a.date||fallback,fallback),period=`${date.slice(0,7)}-01`;
     let q=sb.from('budgets').select('id').eq('period_start',period);q=category?q.eq('category_id',category.id):q.is('category_id',null);const found=await q.maybeSingle();if(found.error)throw found.error;
     const payload={amount:Math.round(amount*100)/100,category_id:category?.id||null,period_start:period};
     const r=found.data?await sb.from('budgets').update(payload).eq('id',found.data.id):await sb.from('budgets').insert({...payload,user_id:userId,rollover:false});if(r.error)throw r.error;
@@ -292,6 +292,7 @@ async function executeAction(sb,userId,a){
 }
 
 async function agentExecute(req,sb,userId,body){
+  if(body.confirmed!==true)return reply(req,{error:'Handlingen er ikke bekræftet. Gå tilbage til planen og tryk Udfør.'},400);
   const actions=Array.isArray(body.actions)?body.actions.slice(0,8):[];
   if(!actions.length)return reply(req,{error:'Ingen handlinger at udføre.'},400);
   const results=[];
