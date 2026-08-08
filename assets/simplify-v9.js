@@ -2,7 +2,6 @@
 (() => {
   const legacyTargets = {
     accounts: 'transactions.html#accounts',
-    import: 'transactions.html#import',
     subscriptions: 'budget.html#subscriptions',
     bills: 'budget.html#bills',
     goals: 'budget.html#goals',
@@ -23,7 +22,6 @@
   const state = { installed: false, base: null };
   const defs = {
     economy: {
-      page: 'transactions',
       tabs: [
         ['transactions', 'Transaktioner'],
         ['accounts', 'Konti'],
@@ -32,7 +30,6 @@
       defaultTab: 'transactions'
     },
     plan: {
-      page: 'budget',
       tabs: [
         ['budget', 'Budget'],
         ['subscriptions', 'Abonnementer'],
@@ -42,7 +39,6 @@
       defaultTab: 'budget'
     },
     insights: {
-      page: 'savings',
       tabs: [
         ['savings', 'Penge fundet'],
         ['analysis', 'Analyse'],
@@ -74,18 +70,26 @@
   window.pp9Tab = function (group, tab) {
     const def = defs[group];
     if (!def || !def.tabs.some(([id]) => id === tab)) return;
+    if (group === 'economy' && tab === 'import') {
+      location.href = 'import.html';
+      return;
+    }
     if (location.hash !== `#${tab}`) history.pushState(null, '', `#${tab}`);
     if (typeof render === 'function') render();
   };
 
   function rewriteEconomyLinks(html) {
     return String(html)
-      .replace(/href="import\.html"/g, 'href="transactions.html#import"')
+      .replace(/href="import\.html"/g, 'href="import.html"')
       .replace(/href="accounts\.html"/g, 'href="transactions.html#accounts"');
   }
 
   async function economyHub() {
     const tab = tabFor('economy');
+    if (tab === 'import') {
+      location.href = 'import.html';
+      return '<div class="loading">Åbner import…</div>';
+    }
     const fn = state.base?.[tab] || state.base?.transactions;
     const html = await fn();
     return `${tabBar('economy')}<div class="pp9hub">${rewriteEconomyLinks(html)}</div>`;
@@ -109,12 +113,57 @@
       <div class="pp9section"><div class="pp9section-title"><h2>Rapporter</h2><p>Historik, månedsudvikling og eksport.</p></div>${reportsHtml}</div>`;
   }
 
+  function savingTokens(value) {
+    const stop = new Set(['og','eller','for','med','din','dit','dine','paa','til','fra','om','en','et','af','pr','md','maaned','maanedlig','spar','spare','besparelse','reducer','reduktion']);
+    return new Set(String(value || '').toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'o').replace(/å/g,'a').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().split(/\s+/).filter(w => w.length > 2 && !stop.has(w)));
+  }
+
+  function savingOverlap(a, b) {
+    const key = row => String(row?.evidence?.dedupe_key || row?.title || '').toLowerCase().replace(/[^a-z0-9æøå]+/gi,' ').trim();
+    const ka = key(a), kb = key(b);
+    if (ka && kb && (ka === kb || ((ka.includes(kb) || kb.includes(ka)) && Math.min(ka.length, kb.length) >= 5))) return true;
+    const score = (x, y) => {
+      const A = savingTokens(x), B = savingTokens(y);
+      if (!A.size || !B.size) return 0;
+      let n = 0;
+      for (const w of A) if (B.has(w)) n++;
+      return n / Math.min(A.size, B.size);
+    };
+    return score(a?.title, b?.title) >= 0.66 || score(`${a?.title || ''} ${a?.description || ''}`, `${b?.title || ''} ${b?.description || ''}`) >= 0.72;
+  }
+
+  async function dedupeSavings() {
+    try {
+      const rows = await q('savings_opportunities', { limit: 500 });
+      const existing = rows.filter(r => r.opportunity_type !== 'ai_generated');
+      const ai = rows
+        .filter(r => r.opportunity_type === 'ai_generated' && r.status === 'open')
+        .sort((a, b) => (Number(b.confidence || 0) * Number(b.monthly_saving || 0)) - (Number(a.confidence || 0) * Number(a.monthly_saving || 0)));
+      const keep = [], remove = [];
+      for (const row of ai) {
+        if (existing.some(x => savingOverlap(row, x)) || keep.some(x => savingOverlap(row, x))) remove.push(row.id);
+        else keep.push(row);
+      }
+      for (let i = 0; i < remove.length; i += 50) {
+        const { error } = await sb.from('savings_opportunities').delete().in('id', remove.slice(i, i + 50));
+        if (error) throw error;
+      }
+      return remove.length;
+    } catch (error) {
+      console.warn('PengePilot savings dedupe', error);
+      return 0;
+    }
+  }
+
   async function insightsHub() {
     const tab = tabFor('insights');
     let html;
     if (tab === 'analysis') html = await analysisPanel();
     else if (tab === 'chat') html = await state.base.chat();
-    else html = await state.base.savings();
+    else {
+      await dedupeSavings();
+      html = await state.base.savings();
+    }
     return `${tabBar('insights')}<div class="pp9hub">${html}</div>`;
   }
 
@@ -182,6 +231,18 @@
     renderers.savings = insightsHub;
 
     addCss();
+
+    if (typeof window.pp6GenerateSavings === 'function' && !window.__PP9_SAVINGS_WRAPPED__) {
+      window.__PP9_SAVINGS_WRAPPED__ = true;
+      const originalGenerate = window.pp6GenerateSavings;
+      window.pp6GenerateSavings = async function () {
+        await originalGenerate();
+        const removed = await dedupeSavings();
+        if (removed && typeof toast === 'function') toast(`${removed} overlappende AI-forslag fjernet`);
+        if (removed && typeof render === 'function') await render();
+      };
+    }
+
     state.installed = true;
 
     window.addEventListener('hashchange', () => {
