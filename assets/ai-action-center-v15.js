@@ -89,9 +89,13 @@
     input.value = '';
     setBusy(true, 'Tænker…');
     try {
-      const status = await P.aiStatus();
+      const status = await window.ppAI.status(true);
       if (!status.configured) {
         log('OpenAI er ikke aktiveret endnu. Når <code>OPENAI_API_KEY</code> ligger som Supabase Edge Function secret, virker handlingscenteret automatisk.');
+        return;
+      }
+      if (!status.agent) {
+        log('AI-handlingscenterets serverdel er endnu ikke deployet. De øvrige AI-funktioner kan fortsat virke, men jeg foretager ingen appændringer før v15-backenden er aktiv.');
         return;
       }
       const plan = await window.ppAI.invoke('agent_plan', { message });
