@@ -74,9 +74,8 @@ async function openAI({ instructions, input, schema = null, name = "pengepilot_o
     instructions,
     input: typeof input === "string" ? input : JSON.stringify(input)
   };
-  if (schema) {
-    body.text = { format: { type: "json_schema", name, strict: true, schema } };
-  }
+  if (schema) body.text = { format: { type: "json_schema", name, strict: true, schema } };
+
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
@@ -116,9 +115,7 @@ async function categorize(req, supabase, body) {
       const { error } = await supabase.from("transactions").update({ category_id: rule.category_id }).eq("id", tx.id);
       if (error) throw error;
       learned++;
-    } else {
-      aiRows.push(tx);
-    }
+    } else aiRows.push(tx);
   }
 
   if (!aiRows.length) return reply(req, { ok: true, configured: Boolean(Deno.env.get("OPENAI_API_KEY")), changed: learned, learned, ai: 0, remaining: 0, model: MODEL });
@@ -184,11 +181,13 @@ async function snapshot(supabase) {
     supabase.from("budgets").select("period_start,amount,category_id").order("period_start", { ascending: false }).limit(200)
   ]);
   for (const result of [txRes, catRes, subRes, billRes, goalRes, budgetRes]) if (result.error) throw result.error;
+
   const categories = catRes.data || [];
   const cmap = Object.fromEntries(categories.map(c => [c.id, c]));
   const months = {};
   const categorySpend = {};
   const merchants = {};
+
   for (const t of txRes.data || []) {
     if (cmap[t.category_id]?.category_type === "transfer") continue;
     const month = String(t.transaction_date).slice(0, 7);
@@ -204,6 +203,7 @@ async function snapshot(supabase) {
       merchants[merchant] = (merchants[merchant] || 0) + spend;
     }
   }
+
   const divisor = Math.max(1, Object.keys(months).length);
   return {
     period: { since, months_with_data: Object.keys(months).length },
@@ -229,8 +229,43 @@ async function explain(req, supabase, body) {
   return reply(req, { ok: true, answer: result.text, model: result.model });
 }
 
+function savingTokens(value) {
+  const stop = new Set(["og","eller","for","med","din","dit","dine","paa","til","fra","om","en","et","af","pr","md","maaned","maanedlig","spar","spare","besparelse","reducer","reduktion"]);
+  return new Set(norm(value).split(/\s+/).filter(word => word.length > 2 && !stop.has(word)));
+}
+
+function savingOverlap(a, b) {
+  const key = row => norm(row?.evidence?.dedupe_key || row?.dedupe_key || row?.title || "");
+  const ka = key(a), kb = key(b);
+  if (ka && kb && (ka === kb || ((ka.includes(kb) || kb.includes(ka)) && Math.min(ka.length, kb.length) >= 5))) return true;
+
+  const similarity = (left, right) => {
+    const A = savingTokens(left), B = savingTokens(right);
+    if (!A.size || !B.size) return 0;
+    let shared = 0;
+    for (const word of A) if (B.has(word)) shared++;
+    return shared / Math.min(A.size, B.size);
+  };
+  return similarity(a?.title, b?.title) >= 0.66 || similarity(`${a?.title || ""} ${a?.description || ""}`, `${b?.title || ""} ${b?.description || ""}`) >= 0.72;
+}
+
 async function savings(req, supabase, userId) {
-  const data = await snapshot(supabase);
+  const [data, existingRes] = await Promise.all([
+    snapshot(supabase),
+    supabase.from("savings_opportunities").select("id,opportunity_type,title,description,monthly_saving,confidence,status,evidence").order("created_at", { ascending: false }).limit(500)
+  ]);
+  if (existingRes.error) throw existingRes.error;
+
+  const blockers = (existingRes.data || [])
+    .filter(row => row.opportunity_type !== "ai_generated" || row.status !== "open")
+    .map(row => ({
+      title: row.title,
+      description: row.description,
+      status: row.status,
+      opportunity_type: row.opportunity_type,
+      dedupe_key: row.evidence?.dedupe_key || null
+    }));
+
   const schema = {
     type: "object",
     additionalProperties: false,
@@ -242,42 +277,70 @@ async function savings(req, supabase, userId) {
           type: "object",
           additionalProperties: false,
           properties: {
+            dedupe_key: { type: "string" },
             title: { type: "string" },
             description: { type: "string" },
             monthly_saving: { type: "number", minimum: 0 },
             confidence: { type: "number", minimum: 0, maximum: 1 },
             why: { type: "string" }
           },
-          required: ["title", "description", "monthly_saving", "confidence", "why"]
+          required: ["dedupe_key", "title", "description", "monthly_saving", "confidence", "why"]
         }
       }
     },
     required: ["suggestions"]
   };
+
   const result = await openAI({
     name: "pengepilot_savings",
     schema,
-    instructions: "Find realistiske, frivillige besparelser i en dansk privatøkonomi. Brug kun de vedlagte kategori-, merchant-, abonnement-, regnings-, mål- og budgetdata. Vær konservativ og undgå investering, skat, kredit og gældsomlægning. Hvis datagrundlaget er tyndt, returnér færre forslag.",
-    input: { financial_snapshot: data },
+    instructions: "Find realistiske, frivillige besparelser i en dansk privatøkonomi. Brug kun de vedlagte kategori-, merchant-, abonnement-, regnings-, mål- og budgetdata. Vær konservativ og undgå investering, skat, kredit og gældsomlægning. Hvert forslag skal være en unik handling mod en unik udgift eller kategori. Returnér aldrig to forslag, der helt eller delvist løser den samme underliggende besparelse. Undgå også alle eksisterende forslag i existing_suggestions, også hvis de kan omformuleres. dedupe_key skal være en kort stabil nøgle for handlingen, fx category:restaurant-cut, merchant:netflix-cancel eller fees:bank. Hvis datagrundlaget ikke rummer flere reelt forskellige muligheder, returnér færre forslag.",
+    input: { financial_snapshot: data, existing_suggestions: blockers },
     maxTokens: 2200
   });
-  const rows = (result.data.suggestions || []).map(s => ({
+
+  const candidates = (result.data.suggestions || []).map(s => ({
     user_id: userId,
     opportunity_type: "ai_generated",
+    dedupe_key: norm(s.dedupe_key).replace(/\s+/g, ":").slice(0, 120),
     title: String(s.title).slice(0, 120),
     description: String(s.description).slice(0, 600),
     monthly_saving: Math.max(0, Math.round(Number(s.monthly_saving || 0) * 100) / 100),
     confidence: Math.max(0, Math.min(1, Number(s.confidence || 0.5))),
     status: "open",
-    evidence: { source: "openai", model: result.model, why: String(s.why).slice(0, 500) }
+    why: String(s.why).slice(0, 500)
+  })).filter(row => row.title && row.monthly_saving > 0);
+
+  candidates.sort((a, b) => (b.confidence * b.monthly_saving) - (a.confidence * a.monthly_saving));
+  const unique = [];
+  let removedOverlap = 0;
+  for (const row of candidates) {
+    if (blockers.some(existing => savingOverlap(row, existing)) || unique.some(existing => savingOverlap(row, existing))) {
+      removedOverlap++;
+      continue;
+    }
+    unique.push(row);
+  }
+
+  const rows = unique.map(row => ({
+    user_id: row.user_id,
+    opportunity_type: row.opportunity_type,
+    title: row.title,
+    description: row.description,
+    monthly_saving: row.monthly_saving,
+    confidence: row.confidence,
+    status: row.status,
+    evidence: { source: "openai", model: result.model, why: row.why, dedupe_key: row.dedupe_key }
   }));
+
   const { error: deleteError } = await supabase.from("savings_opportunities").delete().eq("opportunity_type", "ai_generated").eq("status", "open");
   if (deleteError) throw deleteError;
   if (rows.length) {
     const { error } = await supabase.from("savings_opportunities").insert(rows);
     if (error) throw error;
   }
-  return reply(req, { ok: true, count: rows.length, suggestions: rows, model: result.model });
+
+  return reply(req, { ok: true, count: rows.length, removed_overlap: removedOverlap, suggestions: rows, model: result.model });
 }
 
 Deno.serve(async req => {
@@ -286,9 +349,11 @@ Deno.serve(async req => {
   try {
     const authHeader = req.headers.get("authorization") || "";
     if (!authHeader.toLowerCase().startsWith("bearer ")) return reply(req, { error: "Ikke logget ind." }, 401);
+
     const url = Deno.env.get("SUPABASE_URL") || "";
     const key = publicKey();
     if (!url || !key) return reply(req, { error: "Supabase function environment er ikke korrekt konfigureret." }, 500);
+
     const supabase = createClient(url, key, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false, autoRefreshToken: false }
@@ -296,6 +361,7 @@ Deno.serve(async req => {
     const token = authHeader.replace(/^Bearer\s+/i, "");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData.user) return reply(req, { error: "Ugyldig eller udløbet session." }, 401);
+
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "");
     if (action === "status") return reply(req, { ok: true, configured: Boolean(Deno.env.get("OPENAI_API_KEY")), model: MODEL });
