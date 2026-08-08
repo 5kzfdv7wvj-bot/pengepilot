@@ -112,7 +112,7 @@
     const plan = pending;
     pending = null;
     try {
-      const result = await window.ppAI.invoke('agent_execute', { actions: plan.actions });
+      const result = await window.ppAI.invoke('agent_execute', { confirmed: true, actions: plan.actions });
       const items = (result.results || []).map(r => `<div class="pp15result ${r.ok ? 'good' : 'bad'}">${r.ok ? '✓' : '✕'} ${e(r.summary)}</div>`).join('');
       log(`<b>${result.failed ? 'Delvist udført' : 'Udført'}</b>${items}`);
       if (typeof render === 'function') await render();
