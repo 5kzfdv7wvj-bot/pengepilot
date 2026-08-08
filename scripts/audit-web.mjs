@@ -40,9 +40,20 @@ for (const file of syntaxFiles) {
 const configPath = path.join(root, 'assets/config.js');
 if (fs.existsSync(configPath)) {
   const config = fs.readFileSync(configPath, 'utf8');
-  const retired = ['polish-core-v7.js','polish-finance-v7.js','polish-overview-v7.js','polish-local-v7.js','simplify-v10.js','ai-runtime-v8.js','store-runtime-v12.js'];
-  for (const file of retired) if (config.includes(file)) fail.push(`config.js loader stadig koblet til udfaset runtime: ${file}`);
-  for (const required of ['web-core-v13.js','web-economy-v13.js','web-budget-v13.js','web-fixed-v13.js','web-savings-v13.js','web-analysis-v13.js','web-chat-v13.js','web-dashboard-v13.js','web-settings-v13.js','web-boot-v13.js','ai-runtime-v13.js','import-fix-v13.js']) if (!config.includes(required)) fail.push(`config.js loader mangler ${required}`);
+  const retired = ['polish-core-v7.js','polish-finance-v7.js','polish-overview-v7.js','polish-local-v7.js','simplify-v10.js','ai-runtime-v8.js','store-runtime-v12.js','web-boot-v13.js','web-analysis-v13.js','web-chat-v13.js'];
+  for (const file of retired) if (config.includes(file)) fail.push(`config.js loader stadig koblet til udfaset/afprioriteret runtime: ${file}`);
+  for (const required of ['web-core-v13.js','web-economy-v13.js','web-budget-v13.js','web-fixed-v13.js','web-savings-v13.js','web-dashboard-v13.js','web-settings-v13.js','web-economy-v14.js','web-dashboard-v14.js','web-boot-v14.js','mobile-v14.css','ai-runtime-v13.js','import-fix-v13.js']) if (!config.includes(required)) fail.push(`config.js loader mangler ${required}`);
+}
+
+for (const required of ['assets/mobile-v14.css','assets/web-economy-v14.js','assets/web-dashboard-v14.js','assets/web-boot-v14.js']) {
+  if (!fs.existsSync(path.join(root, required))) fail.push(`Mangler v14-fil: ${required}`);
+}
+
+const boot14 = path.join(root, 'assets/web-boot-v14.js');
+if (fs.existsSync(boot14)) {
+  const content = fs.readFileSync(boot14, 'utf8');
+  for (const label of ['Overblik','Forbrug','Spar penge','Indstillinger']) if (!content.includes(label)) fail.push(`v14-navigation mangler: ${label}`);
+  for (const retiredLabel of ["'Plan'","'Indsigter'"]) if (content.includes(retiredLabel)) fail.push(`v14-navigation indeholder fortsat hovedpunkt ${retiredLabel}`);
 }
 
 if (fail.length) {
@@ -50,4 +61,4 @@ if (fail.length) {
   for (const item of fail) console.error(`- ${item}`);
   process.exit(1);
 }
-console.log(`Web audit OK: ${htmlFiles.length} HTML-sider, ${syntaxFiles.length} JS/MJS-filer og lokale referencer valideret.`);
+console.log(`Web audit OK: ${htmlFiles.length} HTML-sider, ${syntaxFiles.length} JS/MJS-filer, mobile v14 assets og lokale referencer valideret.`);
