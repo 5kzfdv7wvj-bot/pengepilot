@@ -13,9 +13,9 @@ window.PENGEPILOT_CONFIG = {
     'assets/polish-finance-v7.js?v=7',
     'assets/polish-overview-v7.js?v=7',
     'assets/polish-local-v7.js?v=7',
-    'assets/ai-runtime-v8.js?v=8',
+    'assets/ai-runtime-v8.js?v=10',
     'assets/import-ai-v8.js?v=8',
-    'assets/simplify-v9.js?v=9'
+    'assets/simplify-v10.js?v=10'
   ];
   const start = () => {
     let i = 0;
