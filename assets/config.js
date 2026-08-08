@@ -13,14 +13,25 @@ window.PENGEPILOT_CONFIG = {
     'assets/polish-finance-v7.js?v=7',
     'assets/polish-local-v7.js?v=7'
   ];
-  let i = 0;
-  const loadNext = () => {
-    if (i >= files.length) return;
-    const script = document.createElement('script');
-    script.src = files[i++];
-    script.async = false;
-    script.onload = loadNext;
-    document.head.appendChild(script);
+  const start = () => {
+    let i = 0;
+    const loadNext = () => {
+      if (i >= files.length) {
+        setTimeout(() => {
+          try {
+            if (typeof currentUser !== 'undefined' && currentUser && typeof render === 'function') render();
+          } catch {}
+        }, 150);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = files[i++];
+      script.async = false;
+      script.onload = loadNext;
+      document.head.appendChild(script);
+    };
+    loadNext();
   };
-  loadNext();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+  else start();
 })();
