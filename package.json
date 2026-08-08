@@ -5,17 +5,23 @@
   "description": "Native iOS and Android shell for PengePilot",
   "scripts": {
     "mobile:prepare": "node scripts/prepare-mobile.mjs",
-    "mobile:add:android": "npm run mobile:prepare && npx cap add android",
-    "mobile:add:ios": "npm run mobile:prepare && npx cap add ios",
-    "mobile:sync": "npm run mobile:prepare && npx cap sync"
+    "mobile:configure": "node scripts/configure-native.mjs",
+    "mobile:assets": "npx capacitor-assets generate --assetPath resources --iconBackgroundColor '#0D1428' --iconBackgroundColorDark '#0D1428' --splashBackgroundColor '#0D1428' --splashBackgroundColorDark '#0D1428'",
+    "mobile:add:android": "npm run mobile:prepare && npx cap add android && npm run mobile:configure && npm run mobile:assets",
+    "mobile:add:ios": "npm run mobile:prepare && npx cap add ios && npm run mobile:configure && npm run mobile:assets",
+    "mobile:sync": "npm run mobile:prepare && npx cap sync && npm run mobile:configure && npm run mobile:assets",
+    "play:upload": "node scripts/upload-play.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.4.2",
+    "@capacitor/app": "8.1.1",
     "@capacitor/core": "8.4.2",
     "@capacitor/ios": "8.4.2"
   },
   "devDependencies": {
+    "@capacitor/assets": "3.0.5",
     "@capacitor/cli": "8.4.2",
+    "googleapis": "173.0.0",
     "typescript": "6.0.3"
   },
   "engines": {
