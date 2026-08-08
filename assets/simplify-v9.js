@@ -2,8 +2,8 @@
 (() => {
   const legacyTargets = {
     accounts: 'transactions.html#accounts',
-    subscriptions: 'budget.html#subscriptions',
-    bills: 'budget.html#bills',
+    subscriptions: 'budget.html#fixed',
+    bills: 'budget.html#fixed',
     goals: 'budget.html#goals',
     forecast: 'savings.html#analysis',
     health: 'savings.html#analysis',
@@ -32,8 +32,7 @@
     plan: {
       tabs: [
         ['budget', 'Budget'],
-        ['subscriptions', 'Abonnementer'],
-        ['bills', 'Regninger'],
+        ['fixed', 'Faste betalinger'],
         ['goals', 'Mål']
       ],
       defaultTab: 'budget'
@@ -79,9 +78,7 @@
   };
 
   function rewriteEconomyLinks(html) {
-    return String(html)
-      .replace(/href="import\.html"/g, 'href="import.html"')
-      .replace(/href="accounts\.html"/g, 'href="transactions.html#accounts"');
+    return String(html).replace(/href="accounts\.html"/g, 'href="transactions.html#accounts"');
   }
 
   async function economyHub() {
@@ -97,8 +94,19 @@
 
   async function planHub() {
     const tab = tabFor('plan');
-    const fn = state.base?.[tab] || state.base?.budget;
-    const html = await fn();
+    let html;
+    if (tab === 'fixed') {
+      const [subscriptionsHtml, billsHtml] = await Promise.all([
+        state.base.subscriptions(),
+        state.base.bills()
+      ]);
+      const clean = value => String(value).replace(/<div id="modal"><\/div>/g, '');
+      html = `<div class="pp9section"><div class="pp9section-title"><h2>Abonnementer</h2><p>Gentagne betalinger og abonnementer.</p></div>${clean(subscriptionsHtml)}</div>
+        <div class="pp9section"><div class="pp9section-title"><h2>Regninger</h2><p>Kommende og betalte regninger.</p></div>${clean(billsHtml)}</div><div id="modal"></div>`;
+    } else {
+      const fn = state.base?.[tab] || state.base?.budget;
+      html = await fn();
+    }
     return `${tabBar('plan')}<div class="pp9hub">${html}</div>`;
   }
 
@@ -135,13 +143,13 @@
   async function dedupeSavings() {
     try {
       const rows = await q('savings_opportunities', { limit: 500 });
-      const existing = rows.filter(r => r.opportunity_type !== 'ai_generated');
+      const blockers = rows.filter(r => r.opportunity_type !== 'ai_generated' || r.status !== 'open');
       const ai = rows
         .filter(r => r.opportunity_type === 'ai_generated' && r.status === 'open')
         .sort((a, b) => (Number(b.confidence || 0) * Number(b.monthly_saving || 0)) - (Number(a.confidence || 0) * Number(a.monthly_saving || 0)));
       const keep = [], remove = [];
       for (const row of ai) {
-        if (existing.some(x => savingOverlap(row, x)) || keep.some(x => savingOverlap(row, x))) remove.push(row.id);
+        if (blockers.some(x => savingOverlap(row, x)) || keep.some(x => savingOverlap(row, x))) remove.push(row.id);
         else keep.push(row);
       }
       for (let i = 0; i < remove.length; i += 50) {
@@ -183,7 +191,7 @@
   }
 
   async function waitForAiLayer() {
-    if (!window.ppAI?.status) return;
+    if (!['transactions','savings'].includes(page) || !window.ppAI?.status) return;
     try {
       const status = await window.ppAI.status();
       if (!status?.configured) return;
@@ -216,7 +224,7 @@
 
     routes.splice(0, routes.length,
       ['dashboard', 'Overblik', 'index.html'],
-      ['transactions', 'Økonomi', 'transactions.html'],
+      [page === 'import' ? 'import' : 'transactions', 'Økonomi', 'transactions.html'],
       ['budget', 'Plan', 'budget.html'],
       ['savings', 'Indsigter', 'savings.html'],
       ['settings', 'Indstillinger', 'settings.html']
