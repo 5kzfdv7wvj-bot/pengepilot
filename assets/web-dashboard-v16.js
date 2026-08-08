@@ -6,8 +6,10 @@
 
   const freshness = (row, fp) => {
     if (row.status !== 'open') return true;
-    if (row.opportunity_type === 'local_v13') return row.evidence?.fingerprint === fp;
-    return row.evidence?.v15 === true || row.evidence?.v16 === true;
+    if (row.opportunity_type === 'local_v16') return row.evidence?.fingerprint === fp;
+    if (row.opportunity_type === 'local_v13') return false;
+    if (row.opportunity_type === 'ai_generated') return row.evidence?.v16 === true && row.evidence?.fingerprint === fp;
+    return true;
   };
 
   async function dashboard() {
