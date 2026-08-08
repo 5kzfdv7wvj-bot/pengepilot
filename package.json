@@ -1,0 +1,23 @@
+{
+  "name": "pengepilot-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native iOS and Android shell for PengePilot",
+  "scripts": {
+    "mobile:prepare": "node scripts/prepare-mobile.mjs",
+    "mobile:add:android": "npm run mobile:prepare && npx cap add android",
+    "mobile:add:ios": "npm run mobile:prepare && npx cap add ios",
+    "mobile:sync": "npm run mobile:prepare && npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/core": "8.4.2",
+    "@capacitor/ios": "8.4.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

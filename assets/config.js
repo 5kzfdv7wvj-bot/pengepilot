@@ -9,6 +9,7 @@ window.PENGEPILOT_CONFIG = {
   if (window.__PENGEPILOT_POLISH_LOADER__) return;
   window.__PENGEPILOT_POLISH_LOADER__ = true;
   const files = [
+    'assets/native-runtime-v11.js?v=11',
     'assets/polish-core-v7.js?v=7',
     'assets/polish-finance-v7.js?v=7',
     'assets/polish-overview-v7.js?v=7',

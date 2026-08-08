@@ -3,3 +3,10 @@ supabase/functions/.env
 .env
 .env.*
 !.env.example
+
+node_modules/
+www/
+android/
+ios/
+build/
+*.log
