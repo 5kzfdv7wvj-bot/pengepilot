@@ -98,9 +98,15 @@ security definer
 set search_path = public
 as $$
 begin
-  perform public.pp_refresh_debt_status(coalesce(new.debt_id, old.debt_id));
-  if tg_op = 'UPDATE' and old.debt_id is distinct from new.debt_id then perform public.pp_refresh_debt_status(old.debt_id); end if;
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then
+    perform public.pp_refresh_debt_status(old.debt_id);
+    return old;
+  end if;
+  perform public.pp_refresh_debt_status(new.debt_id);
+  if tg_op = 'UPDATE' and old.debt_id is distinct from new.debt_id then
+    perform public.pp_refresh_debt_status(old.debt_id);
+  end if;
+  return new;
 end;
 $$;
 
