@@ -1,0 +1,36 @@
+name: PengePilot web quality
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'assets/**'
+      - 'scripts/**'
+      - 'package.json'
+      - '.github/workflows/web-quality.yml'
+  pull_request:
+    paths:
+      - '*.html'
+      - 'assets/**'
+      - 'scripts/**'
+      - 'package.json'
+      - '.github/workflows/web-quality.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Audit web prototype
+        run: npm run web:audit

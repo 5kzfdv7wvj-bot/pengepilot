@@ -6,34 +6,33 @@ window.PENGEPILOT_CONFIG = {
 };
 
 (() => {
-  if (window.__PENGEPILOT_POLISH_LOADER__) return;
-  window.__PENGEPILOT_POLISH_LOADER__ = true;
+  if (window.__PENGEPILOT_STABLE_LOADER__) return;
+  window.__PENGEPILOT_STABLE_LOADER__ = true;
   const files = [
     'assets/native-runtime-v12.js?v=12',
-    'assets/polish-core-v7.js?v=7',
-    'assets/polish-finance-v7.js?v=7',
-    'assets/polish-overview-v7.js?v=7',
-    'assets/polish-local-v7.js?v=7',
-    'assets/ai-runtime-v8.js?v=10',
+    'assets/ai-runtime-v13.js?v=13',
+    'assets/web-core-v13.js?v=13',
     'assets/import-ai-v8.js?v=8',
-    'assets/simplify-v10.js?v=10',
-    'assets/store-runtime-v12.js?v=12'
+    'assets/import-fix-v13.js?v=13',
+    'assets/web-economy-v13.js?v=13',
+    'assets/web-budget-v13.js?v=13',
+    'assets/web-fixed-v13.js?v=13',
+    'assets/web-savings-v13.js?v=13',
+    'assets/web-analysis-v13.js?v=13',
+    'assets/web-chat-v13.js?v=13',
+    'assets/web-dashboard-v13.js?v=13',
+    'assets/web-settings-v13.js?v=13',
+    'assets/web-boot-v13.js?v=13'
   ];
   const start = () => {
     let i = 0;
     const loadNext = () => {
-      if (i >= files.length) {
-        setTimeout(() => {
-          try {
-            if (typeof currentUser !== 'undefined' && currentUser && typeof render === 'function') render();
-          } catch {}
-        }, 150);
-        return;
-      }
+      if (i >= files.length) return;
       const script = document.createElement('script');
       script.src = files[i++];
       script.async = false;
       script.onload = loadNext;
+      script.onerror = () => console.error('PengePilot kunne ikke indlæse runtime:', script.src);
       document.head.appendChild(script);
     };
     loadNext();
