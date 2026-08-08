@@ -9,7 +9,7 @@ window.PENGEPILOT_CONFIG = {
   if (window.__PENGEPILOT_STABLE_LOADER__) return;
   window.__PENGEPILOT_STABLE_LOADER__ = true;
 
-  for (const href of ['assets/mobile-v14.css?v=14','assets/ai-action-center-v15.css?v=15']) {
+  for (const href of ['assets/mobile-v14.css?v=14','assets/product-v16.css?v=16']) {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
     css.href = href;
@@ -23,16 +23,14 @@ window.PENGEPILOT_CONFIG = {
     'assets/import-ai-v8.js?v=8',
     'assets/import-fix-v13.js?v=13',
     'assets/web-economy-v13.js?v=13',
-    'assets/web-budget-v13.js?v=13',
-    'assets/web-fixed-v13.js?v=13',
-    'assets/web-savings-v13.js?v=13',
-    'assets/web-dashboard-v13.js?v=13',
-    'assets/web-settings-v13.js?v=13',
-    'assets/web-economy-v14.js?v=14',
-    'assets/web-dashboard-v14.js?v=14',
-    'assets/debts-v15.js?v=15',
-    'assets/web-boot-v15.js?v=15',
-    'assets/ai-action-center-v15.js?v=15'
+    'assets/web-dashboard-v16.js?v=16',
+    'assets/web-economy-v16.js?v=16',
+    'assets/web-plan-v16.js?v=16',
+    'assets/web-savings-v16.js?v=16',
+    'assets/debts-v16.js?v=16',
+    'assets/web-settings-v16.js?v=16',
+    'assets/web-boot-v16.js?v=16',
+    'assets/ai-action-center-v16.js?v=16'
   ];
 
   const start = () => {
