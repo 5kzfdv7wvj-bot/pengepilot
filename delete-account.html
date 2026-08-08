@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Slet PengePilot-konto</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <main class="main" style="max-width:760px;margin:0 auto;padding-top:40px">
+    <div class="top"><div><h1>Slet konto og data</h1><p>Permanent sletning af din PengePilot-konto.</p></div></div>
+    <div class="notice bad"><b>Permanent handling.</b><br>Din bruger samt PengePilot-data som konti, importer, transaktioner, budgetter, faste betalinger, maal, kategoriregler, indsigter og spareforslag slettes.</div>
+    <section id="signedOut" class="card">
+      <h2>Log ind for at fortsaette</h2>
+      <p class="sub">Vi kraever login, foer en konto kan slettes.</p>
+      <form onsubmit="ppDeleteLogin(event)">
+        <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label>Adgangskode</label><input id="password" type="password" autocomplete="current-password" required></div>
+        <button class="btn">Log ind</button>
+      </form>
+    </section>
+    <section id="signedIn" class="card" hidden>
+      <h2>Bekraeft sletning</h2>
+      <p class="sub">Logget ind som <b id="accountEmail"></b>. Skriv <b>SLET</b> for at bekraefte.</p>
+      <form onsubmit="ppDeleteAccount(event)">
+        <div class="field"><label>Skriv SLET</label><input id="confirmDelete" autocomplete="off" required></div>
+        <button id="deleteButton" class="btn" style="background:#b42318">Slet konto permanent</button>
+      </form>
+    </section>
+    <div id="status" style="margin-top:16px"></div>
+    <p style="margin-top:24px"><a href="settings.html">Tilbage til PengePilot</a> &middot; <a href="privacy.html">Privatlivspolitik</a></p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/delete-account-v12.js?v=12"></script>
+</body>
+</html>
