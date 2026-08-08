@@ -90,6 +90,7 @@ begin
   update public.debts set status = case when v_paid >= v_original then 'paid' else 'active' end where id = p_debt_id;
 end;
 $$;
+revoke all on function public.pp_refresh_debt_status(uuid) from public;
 
 create or replace function public.pp_debt_payment_status_trigger()
 returns trigger
@@ -118,13 +119,14 @@ for each row execute function public.pp_debt_payment_status_trigger();
 create or replace function public.sync_debt_payments(p_debt_id uuid)
 returns integer
 language plpgsql
-security invoker
+security definer
 set search_path = public
 as $$
 declare
   v_debt public.debts%rowtype;
   v_inserted integer := 0;
 begin
+  if auth.uid() is null then raise exception 'Ikke logget ind'; end if;
   select * into v_debt from public.debts where id = p_debt_id and user_id = auth.uid();
   if not found then raise exception 'Gæld findes ikke eller tilhører ikke brugeren'; end if;
   if v_debt.status = 'cancelled' then return 0; end if;
@@ -145,7 +147,7 @@ begin
   return v_inserted;
 end;
 $$;
-
+revoke all on function public.sync_debt_payments(uuid) from public;
 grant execute on function public.sync_debt_payments(uuid) to authenticated;
 
 create or replace function public.pp_match_transaction_to_debt()
